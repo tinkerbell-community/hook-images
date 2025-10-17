@@ -227,11 +227,11 @@ prepare
 **Steps:**
 
 1. Download LTS archives (aarch64, x86_64)
-2. Extract to working directory
-3. Verify expected files exist
-4. Push to GHCR with ORAS
-5. Tag as `${VERSION}` and `${VERSION}-lts`
-6. Optionally tag as `latest` and `latest-lts`
+1. Extract to working directory
+1. Verify expected files exist
+1. Push to GHCR with ORAS
+1. Tag as `${VERSION}` and `${VERSION}-lts`
+1. Optionally tag as `latest` and `latest-lts`
 
 #### `build-armbian-uefi`
 
@@ -240,9 +240,9 @@ prepare
 **Steps:**
 
 1. Download Armbian UEFI archives (arm64, x86)
-2. Extract files
-3. Create standard architecture symlinks
-4. Push to GHCR as `${VERSION}-armbian-uefi`
+1. Extract files
+1. Create standard architecture symlinks
+1. Push to GHCR as `${VERSION}-armbian-uefi`
 
 #### `build-armbian-boards`
 
@@ -266,9 +266,9 @@ matrix:
 **Steps (per board):**
 
 1. Download board archive and x86 UEFI archive
-2. Extract files
-3. Create symlinks (board → ARM, x86 UEFI → x86_64)
-4. Push to GHCR as `${VERSION}-armbian-${BOARD}`
+1. Extract files
+1. Create symlinks (board → ARM, x86 UEFI → x86_64)
+1. Push to GHCR as `${VERSION}-armbian-${BOARD}`
 
 #### `build-all-variants`
 
@@ -293,10 +293,10 @@ matrix:
 **Steps (per variant):**
 
 1. Download **all** archives (LTS + all Armbian variants)
-2. Extract all files
-3. Create variant-specific symlinks
-4. Push to GHCR as `${VERSION}-${VARIANT}-all`
-5. Optionally tag LTS as `latest-all`
+1. Extract all files
+1. Create variant-specific symlinks
+1. Push to GHCR as `${VERSION}-${VARIANT}-all`
+1. Optionally tag LTS as `latest-all`
 
 #### `summary`
 
@@ -321,10 +321,10 @@ oras push <image-reference> \
 ### Key Points
 
 1. **Artifact Type:** Custom type for Hook OS images
-2. **Annotations:** OCI standard + custom Tinkerbell annotation
-3. **Files:** Dynamically discovered boot files
-4. **Symlinks:** Included as-is (ORAS handles them)
-5. **Media Type:** `application/octet-stream` for binary files
+1. **Annotations:** OCI standard + custom Tinkerbell annotation
+1. **Files:** Dynamically discovered boot files
+1. **Symlinks:** Included as-is (ORAS handles them)
+1. **Media Type:** `application/octet-stream` for binary files
 
 ## File Naming Conventions
 
@@ -386,8 +386,8 @@ Examples:
 ORAS (and OCI registries) automatically deduplicate identical layers:
 
 1. When pushing multiple images with the same file, only one copy is stored
-2. Images reference the same layer digest
-3. Pulls are optimized to fetch each unique layer once
+1. Images reference the same layer digest
+1. Pulls are optimized to fetch each unique layer once
 
 ### Storage Efficiency
 
@@ -480,8 +480,8 @@ tar -tzf archive.tar.gz | head -20
 **Solutions:**
 
 1. Verify authentication: `docker login ghcr.io`
-2. Check permissions: workflow needs `packages: write`
-3. Verify image reference syntax
+1. Check permissions: workflow needs `packages: write`
+1. Verify image reference syntax
 
 #### Wrong Files in Image
 
@@ -498,11 +498,11 @@ find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)'
 ### Planned Features
 
 1. **Checksums:** Verify archive integrity with SHA256 checksums
-2. **Signing:** Sign images with Cosign
-3. **Multi-arch Manifests:** Create proper OCI manifest lists
-4. **Automated Testing:** Run boot tests in QEMU
-5. **Version Matrix:** Support building multiple versions in one run
-6. **Incremental Updates:** Only rebuild changed variants
+1. **Signing:** Sign images with Cosign
+1. **Multi-arch Manifests:** Create proper OCI manifest lists
+1. **Automated Testing:** Run boot tests in QEMU
+1. **Version Matrix:** Support building multiple versions in one run
+1. **Incremental Updates:** Only rebuild changed variants
 
 ### Extensibility
 

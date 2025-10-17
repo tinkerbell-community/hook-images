@@ -312,18 +312,22 @@ oras manifest fetch ghcr.io/tinkerbell-community/hook-images:v0.11.1-lts | jq '.
 ## Getting Help
 
 1. **Check Documentation:**
+
    - `README.md` - General overview
    - `docs/TECHNICAL.md` - Technical details
    - `docs/WORKFLOWS.md` - Workflow architecture
 
-2. **Review Logs:**
+1. **Review Logs:**
+
    - GitHub Actions workflow logs
    - Local build script output
 
-3. **Test Locally:**
+1. **Test Locally:**
+
    - Use `scripts/build-local.sh` to reproduce issues
 
-4. **Open Issue:**
+1. **Open Issue:**
+
    - Provide version, variant, and error logs
    - Include steps to reproduce
 
@@ -370,6 +374,6 @@ oras manifest fetch ghcr.io/tinkerbell-community/hook-images:v0.11.1-lts
 - `v0.11.1-armbian-rk35xx-all`
 - `v0.11.1-armbian-rockchip64-all`
 
----
+______________________________________________________________________
 
 **Ready to start?** Run the workflow and pull your first image! 🚀

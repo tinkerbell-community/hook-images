@@ -95,9 +95,9 @@ hook-lts.tar.xz          → ghcr.io/tinkerbell-community/hook-images/lts:v0.11.
 The transformation:
 
 1. Remove `.tar.xz` extension
-2. Remove `hook-` prefix (if present)
-3. Use remainder as image kind
-4. Combine with registry, repo, and version
+1. Remove `hook-` prefix (if present)
+1. Use remainder as image kind
+1. Combine with registry, repo, and version
 
 ## OCI Artifact Details
 
@@ -156,12 +156,12 @@ Resolves to: `ghcr.io/tinkerbell-community/hook-images`
 #### Main Job: `publish`
 
 1. **Checkout repository** - Gets workflow code
-2. **Set up ORAS** - Installs ORAS CLI
-3. **Login to GHCR** - Authenticates with GitHub token
-4. **Download archive** - Fetches tar.xz from Hook release
-5. **Extract image kind** - Parses archive name
-6. **Push with ORAS** - Publishes to GHCR
-7. **Generate summary** - Creates job summary
+1. **Set up ORAS** - Installs ORAS CLI
+1. **Login to GHCR** - Authenticates with GitHub token
+1. **Download archive** - Fetches tar.xz from Hook release
+1. **Extract image kind** - Parses archive name
+1. **Push with ORAS** - Publishes to GHCR
+1. **Generate summary** - Creates job summary
 
 #### Supporting Job: `list-available-archives`
 
@@ -173,22 +173,22 @@ Resolves to: `ghcr.io/tinkerbell-community/hook-images`
 #### Job 1: `discover-archives`
 
 1. **Query GitHub API** - Fetches release information
-2. **Filter assets** - Finds all `*.tar.xz` files
-3. **Build matrix** - Creates JSON array for next job
-4. **Generate summary** - Lists discovered archives
+1. **Filter assets** - Finds all `*.tar.xz` files
+1. **Build matrix** - Creates JSON array for next job
+1. **Generate summary** - Lists discovered archives
 
 #### Job 2: `publish` (Matrix Strategy)
 
 Runs in parallel for each discovered archive:
 
 1. **Checkout repository**
-2. **Set up ORAS**
-3. **Login to GHCR**
-4. **Download archive**
-5. **Determine image kind**
-6. **Push to GHCR**
-7. **Tag as latest** (optional)
-8. **Generate summary**
+1. **Set up ORAS**
+1. **Login to GHCR**
+1. **Download archive**
+1. **Determine image kind**
+1. **Push to GHCR**
+1. **Tag as latest** (optional)
+1. **Generate summary**
 
 #### Job 3: `summary`
 
@@ -303,12 +303,12 @@ gh run view <run-id> --log
 Potential improvements:
 
 1. **Multi-version Support**: Publish multiple Hook versions in one run
-2. **Checksum Verification**: Verify archive checksums before publishing
-3. **Retention Policies**: Implement automatic cleanup of old versions
-4. **Release Notes**: Include Hook release notes in image annotations
-5. **Automated Scheduling**: Trigger on new Hook releases automatically
-6. **Cross-platform Manifests**: Create multi-arch manifest lists
-7. **Signing**: Add Cosign signing for published images
+1. **Checksum Verification**: Verify archive checksums before publishing
+1. **Retention Policies**: Implement automatic cleanup of old versions
+1. **Release Notes**: Include Hook release notes in image annotations
+1. **Automated Scheduling**: Trigger on new Hook releases automatically
+1. **Cross-platform Manifests**: Create multi-arch manifest lists
+1. **Signing**: Add Cosign signing for published images
 
 ## Additional Resources
 

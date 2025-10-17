@@ -21,7 +21,7 @@ function validate_option() {
     local value="$3"
 
     if [[ ! " ${valid_values[@]} " =~ " ${value} " ]]; then
-    >&2 echo "Invalid value: '$value' for '${option}'. Valid values are: [${valid_values[*]}]"
+    >&2 echo "Invalid value: '${value}' for '${option}'. Valid values are: [${valid_values[*]}]"
     usage
     exit 1
     fi
@@ -34,12 +34,12 @@ function get_by_kernel_version() {
     local artifacts=""
 
     if [[ "${version}" == "both" ]]; then
-        artifacts+=$(grep -v "latest-lts" <<< $data)$'\n'
-        artifacts+=$(grep "latest-lts" <<< "$data")
+        artifacts+=$(grep -v "latest-lts" <<< "${data}")$'\n'
+        artifacts+=$(grep "latest-lts" <<< "${data}")
     elif [[ "${version}" == "6.6" ]]; then
-        artifacts=$(grep "latest-lts" <<< "$data")
+        artifacts=$(grep "latest-lts" <<< "${data}")
     elif [[ "${version}" == "5.10" ]]; then
-        artifacts=$(grep -v "latest-lts" <<< "$data")
+        artifacts=$(grep -v "latest-lts" <<< "${data}")
     fi
 
     echo "${artifacts}"
@@ -51,12 +51,12 @@ function get_by_extension() {
     local artifacts=""
 
     if [[ "${ext}" == "both" ]]; then
-        artifacts=$(grep ".tar.gz" <<< "$data")$'\n'
-        artifacts+=$(grep ".iso" <<< "$data")
+        artifacts=$(grep ".tar.gz" <<< "${data}")$'\n'
+        artifacts+=$(grep ".iso" <<< "${data}")
     elif [[ "${ext}" == "tar.gz" ]]; then
-        artifacts=$(grep ".tar.gz" <<< "$data")
+        artifacts=$(grep ".tar.gz" <<< "${data}")
     elif [[ "${ext}" == "iso" ]]; then
-        artifacts=$(grep ".iso" <<< "$data")
+        artifacts=$(grep ".iso" <<< "${data}")
     fi
 
     echo "${artifacts}"
@@ -68,12 +68,12 @@ function get_by_arch() {
     local artifacts=""
 
     if [[ "${arch}" == "both" ]]; then
-        artifacts+=$(grep "x86_64" <<< "$data")$'\n'
-        artifacts+=$(grep "aarch64" <<< "$data")
+        artifacts+=$(grep "x86_64" <<< "${data}")$'\n'
+        artifacts+=$(grep "aarch64" <<< "${data}")
     elif [[ "${arch}" == "x86_64" ]]; then
-        artifacts=$(grep "x86_64" <<< "$data")
+        artifacts=$(grep "x86_64" <<< "${data}")
     elif [[ "${arch}" == "aarch64" ]]; then
-        artifacts=$(grep "aarch64" <<< "$data")
+        artifacts=$(grep "aarch64" <<< "${data}")
     fi
 
     echo "${artifacts}"
@@ -87,7 +87,7 @@ function download_artifacts() {
     while IFS= read -r line; do
         echo "==> Downloading artifact: ${line} from ${url}/${line} to ${out_dir}/${line}"
         wget -O "${out_dir}/${line}" "${url}/${line}"
-    done < <(printf '%s\n' "$artifacts")
+    done < <(printf '%s\n' "${artifacts}")
 }
 
 function run_checksum512() {
@@ -95,7 +95,7 @@ function run_checksum512() {
     local out_dir="$2"
 
     (cd "${out_dir}" && sha512sum -c <<< "${checksum_data}")
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         return 1
     fi
     return 0
@@ -109,7 +109,7 @@ function checksum_format() {
 
     while IFS= read -r line; do
         checksums+=$(grep "${line}" <<< "${raw}")$'\n'
-    done < <(printf '%s\n' "$data")
+    done < <(printf '%s\n' "${data}")
 
     echo "${checksums}"
 }
@@ -131,7 +131,7 @@ function run_for_kernel_version() {
     fi
 
     download_artifacts "${url}" "${filtered}" "${output_dir}"
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         echo "==> Failed to download artifacts"
         return 1
     fi
@@ -163,7 +163,7 @@ function run_for_hookos_version() {
 
     # 2. download the checksum file
     echo "==> Downloading checksum file from ${url} to ${checksum_file}"
-    if ! wget -O "${checksum_file}" ${url}/checksum.txt; then
+    if ! wget -O "${checksum_file}" "${url}"/checksum.txt; then
         echo "==> Failed to download checksum file: ${url}/checksum.txt"
         return 1
     fi
@@ -178,7 +178,7 @@ function run_for_hookos_version() {
 
     echo "filtered artifacts: ${filtered}"
     run_for_kernel_version "${filtered}" "${raw_data}" "${output_dir}/${hookos_version}/${kernel_version}" "${checksum_file}" "${download_url}"
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         echo "==> Failed to download or verify artifacts for HookOS version ${hookos_version} and kernel version ${kernel_version}"
         return 1
     fi
@@ -201,7 +201,7 @@ if [[ $? -gt 0 ]]; then
     usage
 fi
 
-eval set -- ${args}
+eval set -- "${args}"
 while :
 do
     case $1 in
@@ -212,19 +212,19 @@ do
         shift 2 ;;
     -a | --arch)
         if [[ ! -z $2 ]]; then
-        validate_option "arch" "${valid_arches[*]}" $2
+        validate_option "arch" "${valid_arches[*]}" "$2"
         arch=$2
         fi
         shift 2 ;;
     -v | --version)
         if [[ ! -z $2 ]]; then
-        validate_option "version" "${valid_versions[*]}" $2
+        validate_option "version" "${valid_versions[*]}" "$2"
         version=$2
         fi
         shift 2 ;;
     -e | --ext)
         if [[ ! -z $2 ]]; then
-        validate_option "ext" "${valid_exts[*]}" $2
+        validate_option "ext" "${valid_exts[*]}" "$2"
         ext=$2
         fi
         shift 2 ;;
@@ -240,7 +240,7 @@ do
         shift ;;
     # -- means the end of the arguments; drop this, and break out of the while loop
     --) shift; break ;;
-    *) >&2 echo Unsupported option: $1
+    *) >&2 echo Unsupported option: "$1"
         usage ;;
     esac
 done
@@ -248,11 +248,11 @@ done
 echo "==> Downloading HookOS artifacts from ${url} for architecture(s): ${arch} and extension(s): ${ext} and kernel version(s): ${version}"
 
 function main() {
-    local hookos_version="$(basename ${url})"
+    local hookos_version="$(basename "${url}")"
 
-    if [ "${version}" == "5.10" ]; then
+    if [[ "${version}" == "5.10" ]]; then
         run_for_hookos_version "${url}" "${arch}" "${version}" "${hookos_version}" "${output_dir}" "${ext}"
-        if [ $? -ne 0 ]; then
+        if [[ $? -ne 0 ]]; then
             echo "==> Failed to download or verify artifacts for HookOS version ${hookos_version} and kernel version ${version}"
             return 1
         fi
@@ -264,15 +264,15 @@ function main() {
         ln -nfs "./${hookos_version}/${version}/initramfs-x86_64" "${output_dir}/initramfs-x86_64"
         ln -nfs "./${hookos_version}/${version}/vmlinuz-aarch64" "${output_dir}/vmlinuz-aarch64"
         ln -nfs "./${hookos_version}/${version}/initramfs-aarch64" "${output_dir}/initramfs-aarch64"
-        if [ "${ext}" == "iso" ] || [ "${ext}" == "both" ]; then
+        if [[ "${ext}" == "iso" ]] || [[ "${ext}" == "both" ]]; then
             echo "==> Creating symlinks for the 5.10 ISO artifacts"
             rm -rf "${output_dir}/hook-x86_64-efi-initrd.iso" "${output_dir}/hook-aarch64-efi-initrd.iso"
             ln -nfs "./${hookos_version}/${version}/hook-x86_64-efi-initrd.iso" "${output_dir}/hook-x86_64-efi-initrd.iso"
             ln -nfs "./${hookos_version}/${version}/hook-aarch64-efi-initrd.iso" "${output_dir}/hook-aarch64-efi-initrd.iso"
         fi
-    elif [ "${version}" == "6.6" ]; then
+    elif [[ "${version}" == "6.6" ]]; then
         run_for_hookos_version "${url}" "${arch}" "${version}" "${hookos_version}" "${output_dir}" "${ext}"
-        if [ $? -ne 0 ]; then
+        if [[ $? -ne 0 ]]; then
             echo "==> Failed to download or verify artifacts for HookOS version ${hookos_version} and kernel version ${version}"
             return 1
         fi
@@ -284,20 +284,20 @@ function main() {
         ln -nfs "./${hookos_version}/${version}/initramfs-latest-lts-x86_64" "${output_dir}/initramfs-x86_64"
         ln -nfs "./${hookos_version}/${version}/vmlinuz-latest-lts-aarch64" "${output_dir}/vmlinuz-aarch64"
         ln -nfs "./${hookos_version}/${version}/initramfs-latest-lts-aarch64" "${output_dir}/initramfs-aarch64"
-        if [ "${ext}" == "iso" ] || [ "${ext}" == "both" ]; then
+        if [[ "${ext}" == "iso" ]] || [[ "${ext}" == "both" ]]; then
             echo "==> Creating symlinks for the 6.6 ISO artifacts"
             rm -rf "${output_dir}/hook-latest-lts-x86_64-efi-initrd.iso" "${output_dir}/hook-latest-lts-aarch64-efi-initrd.iso"
             ln -nfs "./${hookos_version}/${version}/hook-latest-lts-x86_64-efi-initrd.iso" "${output_dir}/hook-latest-lts-x86_64-efi-initrd.iso"
             ln -nfs "./${hookos_version}/${version}/hook-latest-lts-aarch64-efi-initrd.iso" "${output_dir}/hook-latest-lts-aarch64-efi-initrd.iso"
         fi
-    elif [ "${version}" == "both" ]; then
+    elif [[ "${version}" == "both" ]]; then
         run_for_hookos_version "${url}" "${arch}" "5.10" "${hookos_version}" "${output_dir}" "${ext}"
-        if [ $? -ne 0 ]; then
+        if [[ $? -ne 0 ]]; then
             echo "==> Failed to download or verify artifacts for HookOS version ${hookos_version} and kernel version 5.10"
             return 1
         fi
         run_for_hookos_version "${url}" "${arch}" "6.6" "${hookos_version}" "${output_dir}" "${ext}"
-        if [ $? -ne 0 ]; then
+        if [[ $? -ne 0 ]]; then
             echo "==> Failed to download or verify artifacts for HookOS version ${hookos_version} and kernel version 6.6"
             return 1
         fi
@@ -309,7 +309,7 @@ function main() {
         ln -nfs "./${hookos_version}/6.6/initramfs-latest-lts-x86_64" "${output_dir}/initramfs-x86_64"
         ln -nfs "./${hookos_version}/6.6/vmlinuz-latest-lts-aarch64" "${output_dir}/vmlinuz-aarch64"
         ln -nfs "./${hookos_version}/6.6/initramfs-latest-lts-aarch64" "${output_dir}/initramfs-aarch64"
-        if [ "${ext}" == "iso" ] || [ "${ext}" == "both" ]; then
+        if [[ "${ext}" == "iso" ]] || [[ "${ext}" == "both" ]]; then
             echo "==> Creating symlinks for the 5.10 and 6.6 ISO artifacts"
             rm -rf "${output_dir}/hook-latest-lts-x86_64-efi-initrd.iso" "${output_dir}/hook-latest-lts-aarch64-efi-initrd.iso"
             rm -rf "${output_dir}/hook-x86_64-efi-initrd.iso" "${output_dir}/hook-aarch64-efi-initrd.iso"
@@ -331,5 +331,5 @@ fi
 
 echo "==> All artifacts available, waiting for signals..."
 sleep infinity & PID=$!
-trap "kill $PID" INT TERM
-wait $PID
+trap "kill ${PID}" INT TERM
+wait "${PID}"

@@ -147,11 +147,11 @@ spec:
 The main workflow (`publish-hook-os-images.yml`) performs these steps:
 
 1. **Prepare**: Determine version tags and configuration
-2. **Build LTS**: Download and extract LTS archives, publish base images
-3. **Build Armbian UEFI**: Create UEFI variant with ARM and x86 support
-4. **Build Board Variants**: Create board-specific images (bcm2711, meson64, rk35xx, rockchip64)
-5. **Build All-in-One**: Create `-all` variants with all boot files and variant-specific symlinks
-6. **Publish**: Push all images to GHCR with OCI annotations
+1. **Build LTS**: Download and extract LTS archives, publish base images
+1. **Build Armbian UEFI**: Create UEFI variant with ARM and x86 support
+1. **Build Board Variants**: Create board-specific images (bcm2711, meson64, rk35xx, rockchip64)
+1. **Build All-in-One**: Create `-all` variants with all boot files and variant-specific symlinks
+1. **Publish**: Push all images to GHCR with OCI annotations
 
 ### File Structure
 
@@ -231,8 +231,9 @@ To add support for new board variants:
          kernel_suffix: edge  # Use appropriate suffix
    ```
 
-2. Update the `build-all-variants` job matrix to include the new variant
-3. Add corresponding logic to `scripts/build-local.sh` for local testing
+1. Update the `build-all-variants` job matrix to include the new variant
+
+1. Add corresponding logic to `scripts/build-local.sh` for local testing
 
 ## License
 

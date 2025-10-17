@@ -9,26 +9,28 @@ A comprehensive GitHub Actions workflow system to build and publish Tinkerbell H
 ### Workflows
 
 1. **`.github/workflows/publish-hook-os-images.yml`** (Main workflow)
+
    - Builds all Hook OS image variants
    - Creates proper boot file bundles with symlinks
    - Publishes to GHCR with ORAS
    - Supports multiple variants: LTS, Armbian UEFI, board-specific, and all-in-one
 
-2. **`.github/workflows/publish-hook-images.yml`** (Legacy - simple archives)
-3. **`.github/workflows/publish-hook-images-dynamic.yml`** (Legacy - dynamic discovery)
+1. **`.github/workflows/publish-hook-images.yml`** (Legacy - simple archives)
+
+1. **`.github/workflows/publish-hook-images-dynamic.yml`** (Legacy - dynamic discovery)
 
 ### Scripts
 
 1. **`scripts/build-local.sh`** - Local testing and building
-2. **`scripts/pull-hook-image.sh`** - Pull and inspect published images
-3. **`scripts/list-images.sh`** - List available images in registry
+1. **`scripts/pull-hook-image.sh`** - Pull and inspect published images
+1. **`scripts/list-images.sh`** - List available images in registry
 
 ### Documentation
 
 1. **`README.md`** - Updated with comprehensive usage instructions
-2. **`docs/TECHNICAL.md`** - Detailed technical documentation
-3. **`docs/WORKFLOWS.md`** - Workflow architecture and details
-4. **`.hook-images.yml`** - Configuration reference
+1. **`docs/TECHNICAL.md`** - Detailed technical documentation
+1. **`docs/WORKFLOWS.md`** - Workflow architecture and details
+1. **`.hook-images.yml`** - Configuration reference
 
 ## Image Variants Supported
 
@@ -179,23 +181,23 @@ prepare (determine versions)
 ### For Users
 
 1. **Easy Access:** Pull pre-built boot files via ORAS
-2. **Standard Names:** Use `vmlinuz-arm64`, `initramfs-x86_64` regardless of variant
-3. **Flexibility:** Choose minimal or all-in-one images
-4. **Versioning:** Pin to specific Hook versions
+1. **Standard Names:** Use `vmlinuz-arm64`, `initramfs-x86_64` regardless of variant
+1. **Flexibility:** Choose minimal or all-in-one images
+1. **Versioning:** Pin to specific Hook versions
 
 ### For Tinkerbell Deployments
 
 1. **Volume Mounts:** Mount OCI images as volumes in Kubernetes
-2. **Network Boot:** Serve boot files from pulled images
-3. **Multi-Architecture:** Support ARM and x86 from single image
-4. **Board Support:** Specific support for popular ARM boards
+1. **Network Boot:** Serve boot files from pulled images
+1. **Multi-Architecture:** Support ARM and x86 from single image
+1. **Board Support:** Specific support for popular ARM boards
 
 ### For Maintenance
 
 1. **Automated:** No manual archive extraction
-2. **Consistent:** Same process for all variants
-3. **Testable:** Local testing script
-4. **Extensible:** Easy to add new boards
+1. **Consistent:** Same process for all variants
+1. **Testable:** Local testing script
+1. **Extensible:** Easy to add new boards
 
 ## Technical Highlights
 
@@ -208,10 +210,10 @@ prepare (determine versions)
 ### Archive Processing
 
 1. Download tar.gz from Hook releases
-2. Extract with `tar -xzf`
-3. Remove archives to save space
-4. Create symlinks for standard names
-5. Push all files (including symlinks) with ORAS
+1. Extract with `tar -xzf`
+1. Remove archives to save space
+1. Create symlinks for standard names
+1. Push all files (including symlinks) with ORAS
 
 ### OCI Annotations
 
@@ -267,14 +269,15 @@ Each image includes:
    gh workflow run publish-hook-os-images.yml -f hook_version=v0.11.1
    ```
 
-2. **Verify Images:**
+1. **Verify Images:**
 
    ```bash
    ./scripts/list-images.sh
    oras pull ghcr.io/tinkerbell-community/hook-images:v0.11.1-lts
    ```
 
-3. **Integrate with Tinkerbell:**
+1. **Integrate with Tinkerbell:**
+
    - Update Tinkerbell deployment manifests
    - Use published images as volume sources
    - Test network boot with pulled files
@@ -282,10 +285,10 @@ Each image includes:
 ### Future Enhancements
 
 1. **Automated Triggers:** Trigger on new Hook releases
-2. **Testing:** Add automated boot tests in QEMU
-3. **Signing:** Add Cosign signature verification
-4. **Multi-Version:** Support building multiple Hook versions
-5. **Monitoring:** Add metrics and alerts
+1. **Testing:** Add automated boot tests in QEMU
+1. **Signing:** Add Cosign signature verification
+1. **Multi-Version:** Support building multiple Hook versions
+1. **Monitoring:** Add metrics and alerts
 
 ## Resources
 
@@ -300,11 +303,11 @@ Each image includes:
 For issues or questions:
 
 1. Check the documentation in `docs/`
-2. Review workflow logs in GitHub Actions
-3. Test locally with `scripts/build-local.sh`
-4. Open an issue on GitHub
+1. Review workflow logs in GitHub Actions
+1. Test locally with `scripts/build-local.sh`
+1. Open an issue on GitHub
 
----
+______________________________________________________________________
 
 **Status:** ✅ Ready for production use
 

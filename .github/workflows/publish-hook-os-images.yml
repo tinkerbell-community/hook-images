@@ -93,7 +93,7 @@ jobs:
         # List extracted files
         echo "Extracted files:"
         ls -lh
-        
+
         # Create standard architecture symlinks if files have different names
         if [ -f "vmlinuz-latest-lts-aarch64" ] && [ ! -f "vmlinuz-aarch64" ]; then
           ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-aarch64
@@ -109,7 +109,7 @@ jobs:
         if [ -f "initramfs-latest-lts-x86_64" ] && [ ! -f "initramfs-x86_64" ]; then
           ln -sf initramfs-latest-lts-x86_64 initramfs-x86_64
         fi
-        
+
         echo "Files after symlinking:"
         ls -lh
 
