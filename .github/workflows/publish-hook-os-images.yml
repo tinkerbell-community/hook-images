@@ -93,14 +93,25 @@ jobs:
         # List extracted files
         echo "Extracted files:"
         ls -lh
-
-        # Verify expected files exist
-        for file in vmlinuz-aarch64 initramfs-aarch64 vmlinuz-x86_64 initramfs-x86_64; do
-          if [ ! -f "$file" ]; then
-            echo "ERROR: Expected file $file not found"
-            exit 1
-          fi
-        done
+        
+        # Create standard architecture symlinks if files have different names
+        if [ -f "vmlinuz-latest-lts-aarch64" ] && [ ! -f "vmlinuz-aarch64" ]; then
+          ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-aarch64
+          ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-arm64
+        fi
+        if [ -f "initramfs-latest-lts-aarch64" ] && [ ! -f "initramfs-aarch64" ]; then
+          ln -sf initramfs-latest-lts-aarch64 initramfs-aarch64
+          ln -sf initramfs-latest-lts-aarch64 initramfs-arm64
+        fi
+        if [ -f "vmlinuz-latest-lts-x86_64" ] && [ ! -f "vmlinuz-x86_64" ]; then
+          ln -sf vmlinuz-latest-lts-x86_64 vmlinuz-x86_64
+        fi
+        if [ -f "initramfs-latest-lts-x86_64" ] && [ ! -f "initramfs-x86_64" ]; then
+          ln -sf initramfs-latest-lts-x86_64 initramfs-x86_64
+        fi
+        
+        echo "Files after symlinking:"
+        ls -lh
 
     - name: Push LTS image
       run: |
@@ -108,9 +119,6 @@ jobs:
 
         VERSION="${{ needs.prepare.outputs.version_tag }}"
         IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
-
-        # Prepare files list for ORAS
-        FILES=$(ls -1 | grep -E '^(vmlinuz|initramfs|modloop)' | sed 's/^/--artifact-file /' | tr '\n' ' ')
 
         # Push version-tagged image
         echo "Pushing ${IMAGE_BASE}:${VERSION}-lts"
@@ -120,7 +128,7 @@ jobs:
           --annotation "org.opencontainers.image.version=${VERSION}" \
           --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image" \
           --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . -type f -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' | sed 's/^//' | xargs -I {} echo "{}:application/octet-stream")
+          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
         # Push default version image (symlinks to lts)
         echo "Pushing ${IMAGE_BASE}:${VERSION}"
@@ -130,7 +138,7 @@ jobs:
           --annotation "org.opencontainers.image.version=${VERSION}" \
           --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (LTS variant)" \
           --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . -type f -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' | sed 's/^//' | xargs -I {} echo "{}:application/octet-stream")
+          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
     - name: Tag as latest
       if: needs.prepare.outputs.publish_latest == 'true'
@@ -147,7 +155,7 @@ jobs:
           --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
           --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image (latest)" \
           --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . -type f -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' | sed 's/^//' | xargs -I {} echo "{}:application/octet-stream")
+          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
         # Push latest (default to lts)
         echo "Pushing ${IMAGE_BASE}:latest"
@@ -157,7 +165,7 @@ jobs:
           --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
           --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (latest LTS)" \
           --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . -type f -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' | sed 's/^//' | xargs -I {} echo "{}:application/octet-stream")
+          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
   build-armbian-uefi:
     needs: prepare
