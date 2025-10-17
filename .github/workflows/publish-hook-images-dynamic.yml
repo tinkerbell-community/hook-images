@@ -1,0 +1,197 @@
+name: Publish Hook Images (Dynamic)
+
+on:
+  workflow_dispatch:
+    inputs:
+      hook_version:
+        description: 'Hook version to publish (e.g., v0.11.1)'
+        required: true
+        type: string
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/publish-hook-images-dynamic.yml'
+
+env:
+  HOOK_VERSION: ${{ inputs.hook_version || 'v0.11.1' }}
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  discover-archives:
+    runs-on: ubuntu-latest
+    outputs:
+      archives: ${{ steps.list.outputs.archives }}
+      count: ${{ steps.list.outputs.count }}
+    steps:
+    - name: Discover all tar.xz archives in release
+      id: list
+      run: |
+        echo "Discovering archives in tinkerbell/hook release ${{ env.HOOK_VERSION }}"
+
+        # Get release info from GitHub API
+        RELEASE_DATA=$(curl -sL \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/tinkerbell/hook/releases/tags/${{ env.HOOK_VERSION }}")
+
+        # Extract tar.xz asset names and build JSON array
+        ARCHIVES=$(echo "${RELEASE_DATA}" | jq -c '[.assets[] | select(.name | endswith(".tar.xz")) | .name | rtrimstr(".tar.xz")]')
+
+        echo "Found archives: ${ARCHIVES}"
+        echo "archives=${ARCHIVES}" >> $GITHUB_OUTPUT
+
+        COUNT=$(echo "${ARCHIVES}" | jq 'length')
+        echo "count=${COUNT}" >> $GITHUB_OUTPUT
+        echo "Total archives found: ${COUNT}"
+
+        # Generate summary
+        echo "## Discovered Archives" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Found **${COUNT}** tar.xz archives in release \`${{ env.HOOK_VERSION }}\`:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "${RELEASE_DATA}" | jq -r '.assets[] | select(.name | endswith(".tar.xz")) | "- `\(.name)` (\(.size / 1024 / 1024 | floor)MB)"' >> $GITHUB_STEP_SUMMARY
+
+  publish:
+    needs: discover-archives
+    runs-on: ubuntu-latest
+    if: needs.discover-archives.outputs.count > 0
+    strategy:
+      matrix:
+        archive: ${{ fromJson(needs.discover-archives.outputs.archives) }}
+      fail-fast: false
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up ORAS
+      uses: oras-project/setup-oras@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download hook release archive
+      run: |
+        ARCHIVE_NAME="${{ matrix.archive }}.tar.xz"
+        DOWNLOAD_URL="https://github.com/tinkerbell/hook/releases/download/${{ env.HOOK_VERSION }}/${ARCHIVE_NAME}"
+
+        echo "Downloading ${ARCHIVE_NAME} from ${DOWNLOAD_URL}"
+        curl -fsSL -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
+
+        echo "Successfully downloaded ${ARCHIVE_NAME}"
+        ls -lh "${ARCHIVE_NAME}"
+
+    - name: Determine image kind
+      id: image
+      run: |
+        ARCHIVE_BASE="${{ matrix.archive }}"
+
+        # Extract image kind from archive name
+        # Examples:
+        #   hook-x86_64 -> x86_64
+        #   hook-aarch64 -> aarch64
+        #   hook-lts -> lts
+        if [[ "${ARCHIVE_BASE}" == hook-* ]]; then
+          IMAGE_KIND="${ARCHIVE_BASE#hook-}"
+        else
+          IMAGE_KIND="${ARCHIVE_BASE}"
+        fi
+
+        echo "image_kind=${IMAGE_KIND}" >> $GITHUB_OUTPUT
+        echo "Image kind: ${IMAGE_KIND}"
+
+    - name: Push to GHCR with ORAS
+      run: |
+        IMAGE_KIND="${{ steps.image.outputs.image_kind }}"
+        ARCHIVE_NAME="${{ matrix.archive }}.tar.xz"
+        IMAGE_REF="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:${{ env.HOOK_VERSION }}"
+
+        echo "Publishing ${ARCHIVE_NAME} to ${IMAGE_REF}"
+
+        # Push the archive as an OCI artifact with annotations
+        oras push "${IMAGE_REF}" \
+          --artifact-type application/vnd.tinkerbell.hook.layer.v1+tar \
+          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+          --annotation "org.opencontainers.image.version=${{ env.HOOK_VERSION }}" \
+          --annotation "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --annotation "org.opencontainers.image.description=Tinkerbell Hook ${IMAGE_KIND} release artifact" \
+          "${ARCHIVE_NAME}:application/x-tar+xz"
+
+        echo "✓ Successfully published ${IMAGE_REF}"
+
+    - name: Tag as latest
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        IMAGE_KIND="${{ steps.image.outputs.image_kind }}"
+        ARCHIVE_NAME="${{ matrix.archive }}.tar.xz"
+        IMAGE_REF_LATEST="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:latest"
+
+        echo "Tagging as latest: ${IMAGE_REF_LATEST}"
+        oras push "${IMAGE_REF_LATEST}" \
+          --artifact-type application/vnd.tinkerbell.hook.layer.v1+tar \
+          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+          --annotation "org.opencontainers.image.version=${{ env.HOOK_VERSION }}" \
+          --annotation "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --annotation "org.opencontainers.image.description=Tinkerbell Hook ${IMAGE_KIND} release artifact" \
+          "${ARCHIVE_NAME}:application/x-tar+xz"
+
+        echo "✓ Successfully tagged ${IMAGE_REF_LATEST}"
+
+    - name: Generate summary
+      run: |
+        IMAGE_KIND="${{ steps.image.outputs.image_kind }}"
+        IMAGE_REF="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:${{ env.HOOK_VERSION }}"
+
+        {
+          echo "## Published Image: ${IMAGE_KIND}"
+          echo ""
+          echo "| Property | Value |"
+          echo "|----------|-------|"
+          echo "| Archive | \`${{ matrix.archive }}.tar.xz\` |"
+          echo "| Image | \`${IMAGE_REF}\` |"
+          echo "| Version | \`${{ env.HOOK_VERSION }}\` |"
+          echo "| Latest Tag | \`${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:latest\` |"
+          echo ""
+          echo "### Pull this image:"
+          echo "\`\`\`bash"
+          echo "oras pull ${IMAGE_REF}"
+          echo "\`\`\`"
+          echo ""
+          echo "### Inspect this image:"
+          echo "\`\`\`bash"
+          echo "oras manifest fetch ${IMAGE_REF}"
+          echo "\`\`\`"
+        } >> $GITHUB_STEP_SUMMARY
+
+  summary:
+    needs: [discover-archives, publish]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Generate final summary
+      run: |
+        {
+          echo "# Publication Summary"
+          echo ""
+          echo "**Hook Version:** \`${{ env.HOOK_VERSION }}\`"
+          echo ""
+          echo "**Archives Processed:** ${{ needs.discover-archives.outputs.count }}"
+          echo ""
+          echo "## Published Images"
+          echo ""
+          echo "All images are available at:"
+          echo "\`\`\`"
+          echo "${{ env.IMAGE_PREFIX }}/<image-kind>:${{ env.HOOK_VERSION }}"
+          echo "\`\`\`"
+          echo ""
+          echo "Where \`<image-kind>\` is one of the discovered archive types."
+        } >> $GITHUB_STEP_SUMMARY

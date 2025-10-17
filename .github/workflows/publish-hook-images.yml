@@ -1,0 +1,137 @@
+name: Publish Hook Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      hook_version:
+        description: 'Hook version to publish (e.g., v0.11.1)'
+        required: true
+        type: string
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/publish-hook-images.yml'
+
+env:
+  HOOK_VERSION: ${{ inputs.hook_version || 'v0.11.1' }}
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Common hook archive names based on typical Tinkerbell hook releases
+        # These represent different architectures/variants
+        archive:
+        - hook-x86_64
+        - hook-aarch64
+        - hook-arm64
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up ORAS
+      uses: oras-project/setup-oras@v1
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download hook release archive
+      id: download
+      run: |
+        ARCHIVE_NAME="${{ matrix.archive }}.tar.xz"
+        DOWNLOAD_URL="https://github.com/tinkerbell/hook/releases/download/${{ env.HOOK_VERSION }}/${ARCHIVE_NAME}"
+
+        echo "Downloading ${ARCHIVE_NAME} from ${DOWNLOAD_URL}"
+
+        # Download the archive, allow failures for archives that don't exist
+        if curl -fsSL -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "archive_name=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+          echo "Successfully downloaded ${ARCHIVE_NAME}"
+          ls -lh "${ARCHIVE_NAME}"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Archive ${ARCHIVE_NAME} not found in release, skipping"
+        fi
+
+    - name: Extract archive name for image tag
+      if: steps.download.outputs.exists == 'true'
+      id: extract
+      run: |
+        # Extract the image kind from archive name (e.g., hook-x86_64 -> x86_64)
+        ARCHIVE_BASE="${{ matrix.archive }}"
+        IMAGE_KIND="${ARCHIVE_BASE#hook-}"
+        echo "image_kind=${IMAGE_KIND}" >> $GITHUB_OUTPUT
+        echo "Image kind: ${IMAGE_KIND}"
+
+    - name: Push to GHCR with ORAS
+      if: steps.download.outputs.exists == 'true'
+      run: |
+        IMAGE_KIND="${{ steps.extract.outputs.image_kind }}"
+        ARCHIVE_NAME="${{ steps.download.outputs.archive_name }}"
+        IMAGE_REF="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:${{ env.HOOK_VERSION }}"
+
+        echo "Publishing ${ARCHIVE_NAME} to ${IMAGE_REF}"
+
+        # Push the archive as an OCI artifact
+        oras push "${IMAGE_REF}" \
+          --artifact-type application/vnd.tinkerbell.hook.layer.v1+tar \
+          "${ARCHIVE_NAME}:application/x-tar+xz"
+
+        echo "Successfully published ${IMAGE_REF}"
+
+        # Also tag as latest if this is the default version
+        if [ "${{ env.HOOK_VERSION }}" = "v0.11.1" ]; then
+          IMAGE_REF_LATEST="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:latest"
+          echo "Tagging as latest: ${IMAGE_REF_LATEST}"
+          oras push "${IMAGE_REF_LATEST}" \
+            --artifact-type application/vnd.tinkerbell.hook.layer.v1+tar \
+            "${ARCHIVE_NAME}:application/x-tar+xz"
+        fi
+
+    - name: Generate summary
+      if: steps.download.outputs.exists == 'true'
+      run: |
+        IMAGE_KIND="${{ steps.extract.outputs.image_kind }}"
+        IMAGE_REF="${{ env.IMAGE_PREFIX }}/${IMAGE_KIND}:${{ env.HOOK_VERSION }}"
+
+        echo "## Published Image" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Archive**: ${{ steps.download.outputs.archive_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image**: \`${IMAGE_REF}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ env.HOOK_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Pull this image with ORAS:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "oras pull ${IMAGE_REF}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  list-available-archives:
+    runs-on: ubuntu-latest
+    steps:
+    - name: List all available archives in release
+      run: |
+        echo "## Available archives in ${{ env.HOOK_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Get release info from GitHub API
+        RELEASE_DATA=$(curl -sL \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/tinkerbell/hook/releases/tags/${{ env.HOOK_VERSION }}")
+
+        # Extract tar.xz assets
+        echo "${RELEASE_DATA}" | jq -r '.assets[] | select(.name | endswith(".tar.xz")) | "- `\(.name)` (\(.size / 1024 / 1024 | floor)MB)"' >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,34 @@
+# Hook Images Configuration
+#
+# This file documents the expected archive types from Tinkerbell Hook releases.
+# Update this when new archive types are added to Hook releases.
+
+# Common archive types (as of v0.11.1):
+# - hook-x86_64.tar.xz
+# - hook-aarch64.tar.xz
+# - hook-arm64.tar.xz
+#
+# These archives are published to:
+# ghcr.io/tinkerbell-community/hook-images/<image-kind>:<version>
+#
+# Where <image-kind> is extracted from the archive name (without 'hook-' prefix)
+
+# Default Hook version to use when not specified
+DEFAULT_HOOK_VERSION: v0.11.1
+
+# Archive types to process (for static workflow)
+ARCHIVE_TYPES:
+- hook-x86_64
+- hook-aarch64
+- hook-arm64
+
+# Image metadata
+IMAGE_ANNOTATIONS:
+  org.opencontainers.image.source: https://github.com/tinkerbell/hook
+  org.opencontainers.image.vendor: Tinkerbell Community
+  org.opencontainers.image.licenses: Apache-2.0
+  org.opencontainers.image.title: Tinkerbell Hook Installation Environment
+
+# OCI artifact configuration
+ARTIFACT_TYPE: application/vnd.tinkerbell.hook.layer.v1+tar
+MEDIA_TYPE: application/x-tar+xz
