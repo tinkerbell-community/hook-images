@@ -1,0 +1,46 @@
+# Multi-stage build for statically compiled ipmitool
+FROM alpine:3.20 AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    autoconf \
+    automake \
+    libtool \
+    make \
+    gcc \
+    g++ \
+    musl-dev \
+    openssl-dev \
+    openssl-libs-static \
+    readline-dev \
+    readline-static \
+    ncurses-static \
+    zlib-static
+
+# Clone ipmitool source
+WORKDIR /build
+RUN git clone https://github.com/ipmitool/ipmitool.git .
+
+# Build static binary
+RUN ./bootstrap && \
+    ./configure \
+    --enable-static \
+    --disable-shared \
+    --enable-ipmievd \
+    --enable-ipmishell \
+    --prefix=/usr \
+    LDFLAGS="-static" && \
+    make -j$(nproc) && \
+    strip src/ipmitool
+
+# Verify it's static
+RUN file src/ipmitool && \
+    ldd src/ipmitool 2>&1 | grep -q "not a dynamic executable" || (echo "Binary is not static!" && exit 1)
+
+# Final minimal image with just the binary
+FROM scratch
+
+COPY --from=builder /build/src/ipmitool /ipmitool
+
+ENTRYPOINT ["/ipmitool"]
