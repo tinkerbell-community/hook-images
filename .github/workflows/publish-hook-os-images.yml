@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       hook_version:
-        description: 'Hook version to publish (e.g., v0.11.1)'
+        description: "Hook version to publish (e.g., v0.11.1)"
         required: true
         type: string
-        default: 'v0.11.1'
+        default: "v0.11.1"
       publish_latest:
-        description: 'Also tag as latest'
+        description: "Also tag as latest"
         required: false
         type: boolean
         default: false
@@ -31,222 +31,222 @@ jobs:
       version_short: ${{ steps.tags.outputs.version_short }}
       publish_latest: ${{ steps.tags.outputs.publish_latest }}
     steps:
-    - name: Determine tags
-      id: tags
-      run: |
-        VERSION="${{ env.HOOK_VERSION }}"
-        # Remove 'v' prefix for version_short
-        VERSION_SHORT="${VERSION#v}"
+      - name: Determine tags
+        id: tags
+        run: |
+          VERSION="${{ env.HOOK_VERSION }}"
+          # Remove 'v' prefix for version_short
+          VERSION_SHORT="${VERSION#v}"
 
-        echo "version_tag=${VERSION}" >> $GITHUB_OUTPUT
-        echo "version_short=${VERSION_SHORT}" >> $GITHUB_OUTPUT
-        echo "publish_latest=${{ inputs.publish_latest }}" >> $GITHUB_OUTPUT
+          echo "version_tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_short=${VERSION_SHORT}" >> $GITHUB_OUTPUT
+          echo "publish_latest=${{ inputs.publish_latest }}" >> $GITHUB_OUTPUT
 
-        echo "Version tag: ${VERSION}"
-        echo "Version short: ${VERSION_SHORT}"
-        echo "Publish latest: ${{ inputs.publish_latest }}"
+          echo "Version tag: ${VERSION}"
+          echo "Version short: ${VERSION_SHORT}"
+          echo "Publish latest: ${{ inputs.publish_latest }}"
 
   build-lts:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up ORAS
-      uses: oras-project/setup-oras@v1
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Download LTS archives
-      run: |
-        mkdir -p work/lts
-        cd work/lts
+      - name: Download LTS archives
+        run: |
+          mkdir -p work/lts
+          cd work/lts
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
 
-        # Download LTS archives
-        echo "Downloading LTS archives..."
-        curl -fsSL -o hook_latest-lts-aarch64.tar.gz "${BASE_URL}/hook_latest-lts-aarch64.tar.gz"
-        curl -fsSL -o hook_latest-lts-x86_64.tar.gz "${BASE_URL}/hook_latest-lts-x86_64.tar.gz"
+          # Download LTS archives
+          echo "Downloading LTS archives..."
+          curl -fsSL -o hook_latest-lts-aarch64.tar.gz "${BASE_URL}/hook_latest-lts-aarch64.tar.gz"
+          curl -fsSL -o hook_latest-lts-x86_64.tar.gz "${BASE_URL}/hook_latest-lts-x86_64.tar.gz"
 
-        ls -lh
+          ls -lh
 
-    - name: Extract and prepare LTS bundle
-      run: |
-        cd work/lts
+      - name: Extract and prepare LTS bundle
+        run: |
+          cd work/lts
 
-        # Extract archives
-        echo "Extracting archives..."
-        tar -xzf hook_latest-lts-aarch64.tar.gz
-        tar -xzf hook_latest-lts-x86_64.tar.gz
+          # Extract archives
+          echo "Extracting archives..."
+          tar -xzf hook_latest-lts-aarch64.tar.gz
+          tar -xzf hook_latest-lts-x86_64.tar.gz
 
-        # Remove tar.gz files
-        rm -f *.tar.gz
+          # Remove tar.gz files
+          rm -f *.tar.gz
 
-        # List extracted files
-        echo "Extracted files:"
-        ls -lh
+          # List extracted files
+          echo "Extracted files:"
+          ls -lh
 
-        # Create standard architecture symlinks if files have different names
-        if [ -f "vmlinuz-latest-lts-aarch64" ] && [ ! -f "vmlinuz-aarch64" ]; then
-          ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-aarch64
-          ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-arm64
-        fi
-        if [ -f "initramfs-latest-lts-aarch64" ] && [ ! -f "initramfs-aarch64" ]; then
-          ln -sf initramfs-latest-lts-aarch64 initramfs-aarch64
-          ln -sf initramfs-latest-lts-aarch64 initramfs-arm64
-        fi
-        if [ -f "vmlinuz-latest-lts-x86_64" ] && [ ! -f "vmlinuz-x86_64" ]; then
-          ln -sf vmlinuz-latest-lts-x86_64 vmlinuz-x86_64
-        fi
-        if [ -f "initramfs-latest-lts-x86_64" ] && [ ! -f "initramfs-x86_64" ]; then
-          ln -sf initramfs-latest-lts-x86_64 initramfs-x86_64
-        fi
+          # Create standard architecture symlinks if files have different names
+          if [ -f "vmlinuz-latest-lts-aarch64" ] && [ ! -f "vmlinuz-aarch64" ]; then
+            ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-aarch64
+            ln -sf vmlinuz-latest-lts-aarch64 vmlinuz-arm64
+          fi
+          if [ -f "initramfs-latest-lts-aarch64" ] && [ ! -f "initramfs-aarch64" ]; then
+            ln -sf initramfs-latest-lts-aarch64 initramfs-aarch64
+            ln -sf initramfs-latest-lts-aarch64 initramfs-arm64
+          fi
+          if [ -f "vmlinuz-latest-lts-x86_64" ] && [ ! -f "vmlinuz-x86_64" ]; then
+            ln -sf vmlinuz-latest-lts-x86_64 vmlinuz-x86_64
+          fi
+          if [ -f "initramfs-latest-lts-x86_64" ] && [ ! -f "initramfs-x86_64" ]; then
+            ln -sf initramfs-latest-lts-x86_64 initramfs-x86_64
+          fi
 
-        echo "Files after symlinking:"
-        ls -lh
+          echo "Files after symlinking:"
+          ls -lh
 
-    - name: Push LTS image
-      run: |
-        cd work/lts
+      - name: Push LTS image
+        run: |
+          cd work/lts
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        # Push version-tagged image
-        echo "Pushing ${IMAGE_BASE}:${VERSION}-lts"
-        oras push "${IMAGE_BASE}:${VERSION}-lts" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${VERSION}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image" \
-          --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          # Push version-tagged image
+          echo "Pushing ${IMAGE_BASE}:${VERSION}-lts"
+          oras push "${IMAGE_BASE}:${VERSION}-lts" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image" \
+            --annotation "org.tinkerbell.hook.variant=lts" \
+            $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
-        # Push default version image (symlinks to lts)
-        echo "Pushing ${IMAGE_BASE}:${VERSION}"
-        oras push "${IMAGE_BASE}:${VERSION}" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${VERSION}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (LTS variant)" \
-          --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          # Push default version image (symlinks to lts)
+          echo "Pushing ${IMAGE_BASE}:${VERSION}"
+          oras push "${IMAGE_BASE}:${VERSION}" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (LTS variant)" \
+            --annotation "org.tinkerbell.hook.variant=lts" \
+            $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
-    - name: Tag as latest
-      if: needs.prepare.outputs.publish_latest == 'true'
-      run: |
-        cd work/lts
+      - name: Tag as latest
+        if: needs.prepare.outputs.publish_latest == 'true'
+        run: |
+          cd work/lts
 
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        # Push latest-lts
-        echo "Pushing ${IMAGE_BASE}:latest-lts"
-        oras push "${IMAGE_BASE}:latest-lts" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image (latest)" \
-          --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          # Push latest-lts
+          echo "Pushing ${IMAGE_BASE}:latest-lts"
+          oras push "${IMAGE_BASE}:latest-lts" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook LTS OS image (latest)" \
+            --annotation "org.tinkerbell.hook.variant=lts" \
+            $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
-        # Push latest (default to lts)
-        echo "Pushing ${IMAGE_BASE}:latest"
-        oras push "${IMAGE_BASE}:latest" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (latest LTS)" \
-          --annotation "org.tinkerbell.hook.variant=lts" \
-          $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          # Push latest (default to lts)
+          echo "Pushing ${IMAGE_BASE}:latest"
+          oras push "${IMAGE_BASE}:latest" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (latest LTS)" \
+            --annotation "org.tinkerbell.hook.variant=lts" \
+            $(find . \( -type f -o -type l \) \( -name 'vmlinuz-*' -o -name 'initramfs-*' -o -name 'modloop-*' \) | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
   build-armbian-uefi:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up ORAS
-      uses: oras-project/setup-oras@v1
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Download Armbian UEFI archives
-      run: |
-        mkdir -p work/armbian-uefi
-        cd work/armbian-uefi
+      - name: Download Armbian UEFI archives
+        run: |
+          mkdir -p work/armbian-uefi
+          cd work/armbian-uefi
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
 
-        echo "Downloading Armbian UEFI archives..."
-        curl -fsSL -o hook_armbian-uefi-arm64-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-arm64-edge.tar.gz" || true
-        curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || true
+          echo "Downloading Armbian UEFI archives..."
+          curl -fsSL -o hook_armbian-uefi-arm64-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-arm64-edge.tar.gz" || true
+          curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || true
 
-        ls -lh
+          ls -lh
 
-    - name: Extract and prepare Armbian UEFI bundle
-      run: |
-        cd work/armbian-uefi
+      - name: Extract and prepare Armbian UEFI bundle
+        run: |
+          cd work/armbian-uefi
 
-        # Extract all archives
-        for archive in *.tar.gz; do
-          if [ -f "$archive" ]; then
-            echo "Extracting $archive..."
-            tar -xzf "$archive"
+          # Extract all archives
+          for archive in *.tar.gz; do
+            if [ -f "$archive" ]; then
+              echo "Extracting $archive..."
+              tar -xzf "$archive"
+            fi
+          done
+
+          # Remove tar.gz files
+          rm -f *.tar.gz
+
+          # Create standard architecture symlinks
+          if [ -f "vmlinuz-armbian-uefi-arm64-edge" ]; then
+            ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-arm64
+            ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-aarch64
           fi
-        done
+          if [ -f "initramfs-armbian-uefi-arm64-edge" ]; then
+            ln -sf initramfs-armbian-uefi-arm64-edge initramfs-arm64
+            ln -sf initramfs-armbian-uefi-arm64-edge initramfs-aarch64
+          fi
+          if [ -f "vmlinuz-armbian-uefi-x86-edge" ]; then
+            ln -sf vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64
+          fi
+          if [ -f "initramfs-armbian-uefi-x86-edge" ]; then
+            ln -sf initramfs-armbian-uefi-x86-edge initramfs-x86_64
+          fi
 
-        # Remove tar.gz files
-        rm -f *.tar.gz
+          echo "Bundle contents:"
+          ls -lh
 
-        # Create standard architecture symlinks
-        if [ -f "vmlinuz-armbian-uefi-arm64-edge" ]; then
-          ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-arm64
-          ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-aarch64
-        fi
-        if [ -f "initramfs-armbian-uefi-arm64-edge" ]; then
-          ln -sf initramfs-armbian-uefi-arm64-edge initramfs-arm64
-          ln -sf initramfs-armbian-uefi-arm64-edge initramfs-aarch64
-        fi
-        if [ -f "vmlinuz-armbian-uefi-x86-edge" ]; then
-          ln -sf vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64
-        fi
-        if [ -f "initramfs-armbian-uefi-x86-edge" ]; then
-          ln -sf initramfs-armbian-uefi-x86-edge initramfs-x86_64
-        fi
+      - name: Push Armbian UEFI image
+        run: |
+          cd work/armbian-uefi
 
-        echo "Bundle contents:"
-        ls -lh
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-    - name: Push Armbian UEFI image
-      run: |
-        cd work/armbian-uefi
-
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
-
-        echo "Pushing ${IMAGE_BASE}:${VERSION}-armbian-uefi"
-        oras push "${IMAGE_BASE}:${VERSION}-armbian-uefi" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${VERSION}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook Armbian UEFI OS image" \
-          --annotation "org.tinkerbell.hook.variant=armbian-uefi" \
-          $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          echo "Pushing ${IMAGE_BASE}:${VERSION}-armbian-uefi"
+          oras push "${IMAGE_BASE}:${VERSION}-armbian-uefi" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook Armbian UEFI OS image" \
+            --annotation "org.tinkerbell.hook.variant=armbian-uefi" \
+            $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
   build-armbian-boards:
     needs: prepare
@@ -254,101 +254,108 @@ jobs:
     strategy:
       matrix:
         board:
-        - name: bcm2711
-          kernel_suffix: current
-        - name: meson64
-          kernel_suffix: edge
-        - name: rk35xx
-          kernel_suffix: vendor
-        - name: rockchip64
-          kernel_suffix: edge
+          - name: bcm2711
+            kernel_suffix: current
+          - name: meson64
+            kernel_suffix: edge
+          - name: rk35xx
+            kernel_suffix: vendor
+          - name: rockchip64
+            kernel_suffix: edge
       fail-fast: false
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up ORAS
-      uses: oras-project/setup-oras@v1
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Download board and x86 archives
-      run: |
-        mkdir -p work/${{ matrix.board.name }}
-        cd work/${{ matrix.board.name }}
+      - name: Download board and x86 archives
+        run: |
+          mkdir -p work/${{ matrix.board.name }}
+          cd work/${{ matrix.board.name }}
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
-        BOARD="${{ matrix.board.name }}"
-        SUFFIX="${{ matrix.board.kernel_suffix }}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
+          BOARD="${{ matrix.board.name }}"
+          SUFFIX="${{ matrix.board.kernel_suffix }}"
 
-        echo "Downloading Armbian board archives for ${BOARD}..."
-        curl -fsSL -o "hook_armbian-${BOARD}-${SUFFIX}.tar.gz" "${BASE_URL}/hook_armbian-${BOARD}-${SUFFIX}.tar.gz" || echo "Board archive not found"
-        curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || echo "x86 archive not found"
+          echo "Downloading Armbian board archives for ${BOARD}..."
+          curl -fsSL -o "hook_armbian-${BOARD}-${SUFFIX}.tar.gz" "${BASE_URL}/hook_armbian-${BOARD}-${SUFFIX}.tar.gz" || echo "Board archive not found"
+          curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || echo "x86 archive not found"
 
-        ls -lh
+          ls -lh
 
-    - name: Extract and prepare board bundle
-      run: |
-        cd work/${{ matrix.board.name }}
+      - name: Extract and prepare board bundle
+        run: |
+          cd work/${{ matrix.board.name }}
 
-        BOARD="${{ matrix.board.name }}"
-        SUFFIX="${{ matrix.board.kernel_suffix }}"
+          BOARD="${{ matrix.board.name }}"
+          SUFFIX="${{ matrix.board.kernel_suffix }}"
 
-        # Extract all archives
-        for archive in *.tar.gz; do
-          if [ -f "$archive" ]; then
-            echo "Extracting $archive..."
-            tar -xzf "$archive"
+          # Extract all archives
+          for archive in *.tar.gz; do
+            if [ -f "$archive" ]; then
+              echo "Extracting $archive..."
+              tar -xzf "$archive"
+            fi
+          done
+
+          # Extract DTB archive for bcm2711
+          if [ "$BOARD" = "bcm2711" ] && [ -f "dtbs-armbian-${BOARD}-${SUFFIX}.tar.gz" ]; then
+            echo "Extracting DTB archive..."
+            mkdir -p dtb
+            tar xvf "dtbs-armbian-${BOARD}-${SUFFIX}.tar.gz" --strip-components=1 -C dtb
           fi
-        done
 
-        # Remove tar.gz files
-        rm -f *.tar.gz
+          # Remove tar.gz files
+          rm -f *.tar.gz
 
-        # Create standard architecture symlinks
-        # ARM board files -> standard ARM names
-        if [ -f "vmlinuz-armbian-${BOARD}-${SUFFIX}" ]; then
-          ln -sf "vmlinuz-armbian-${BOARD}-${SUFFIX}" vmlinuz-arm64
-          ln -sf "vmlinuz-armbian-${BOARD}-${SUFFIX}" vmlinuz-aarch64
-        fi
-        if [ -f "initramfs-armbian-${BOARD}-${SUFFIX}" ]; then
-          ln -sf "initramfs-armbian-${BOARD}-${SUFFIX}" initramfs-arm64
-          ln -sf "initramfs-armbian-${BOARD}-${SUFFIX}" initramfs-aarch64
-        fi
+          # Create standard architecture symlinks
+          # ARM board files -> standard ARM names
+          if [ -f "vmlinuz-armbian-${BOARD}-${SUFFIX}" ]; then
+            ln -sf "vmlinuz-armbian-${BOARD}-${SUFFIX}" vmlinuz-arm64
+            ln -sf "vmlinuz-armbian-${BOARD}-${SUFFIX}" vmlinuz-aarch64
+          fi
+          if [ -f "initramfs-armbian-${BOARD}-${SUFFIX}" ]; then
+            ln -sf "initramfs-armbian-${BOARD}-${SUFFIX}" initramfs-arm64
+            ln -sf "initramfs-armbian-${BOARD}-${SUFFIX}" initramfs-aarch64
+          fi
 
-        # x86 files -> standard x86_64 name
-        if [ -f "vmlinuz-armbian-uefi-x86-edge" ]; then
-          ln -sf vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64
-        fi
-        if [ -f "initramfs-armbian-uefi-x86-edge" ]; then
-          ln -sf initramfs-armbian-uefi-x86-edge initramfs-x86_64
-        fi
+          # x86 files -> standard x86_64 name
+          if [ -f "vmlinuz-armbian-uefi-x86-edge" ]; then
+            ln -sf vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64
+          fi
+          if [ -f "initramfs-armbian-uefi-x86-edge" ]; then
+            ln -sf initramfs-armbian-uefi-x86-edge initramfs-x86_64
+          fi
 
-        echo "Bundle contents:"
-        ls -lh
+          echo "Bundle contents:"
+          ls -lh
 
-    - name: Push board image
-      run: |
-        cd work/${{ matrix.board.name }}
+      - name: Push board image
+        run: |
+          cd work/${{ matrix.board.name }}
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        BOARD="${{ matrix.board.name }}"
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          BOARD="${{ matrix.board.name }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        echo "Pushing ${IMAGE_BASE}:${VERSION}-armbian-${BOARD}"
-        oras push "${IMAGE_BASE}:${VERSION}-armbian-${BOARD}" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${VERSION}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook Armbian ${BOARD} OS image" \
-          --annotation "org.tinkerbell.hook.variant=armbian-${BOARD}" \
-          $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          echo "Pushing ${IMAGE_BASE}:${VERSION}-armbian-${BOARD}"
+          oras push "${IMAGE_BASE}:${VERSION}-armbian-${BOARD}" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook Armbian ${BOARD} OS image" \
+            --annotation "org.tinkerbell.hook.variant=armbian-${BOARD}" \
+            $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop|dtb/)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
   build-all-variants:
     needs: [prepare, build-lts, build-armbian-uefi, build-armbian-boards]
@@ -356,205 +363,220 @@ jobs:
     strategy:
       matrix:
         variant:
-        - name: lts
-          base: lts
-          symlink_arm: aarch64
-          symlink_x86: x86_64
-        - name: armbian-uefi
-          base: armbian-uefi
-          symlink_arm: armbian-uefi-arm64-edge
-          symlink_x86: armbian-uefi-x86-edge
-        - name: armbian-bcm2711
-          base: armbian-bcm2711
-          symlink_arm: armbian-bcm2711-current
-          symlink_x86: armbian-uefi-x86-edge
-        - name: armbian-meson64
-          base: armbian-meson64
-          symlink_arm: armbian-meson64-edge
-          symlink_x86: armbian-uefi-x86-edge
-        - name: armbian-rk35xx
-          base: armbian-rk35xx
-          symlink_arm: armbian-rk35xx-vendor
-          symlink_x86: armbian-uefi-x86-edge
-        - name: armbian-rockchip64
-          base: armbian-rockchip64
-          symlink_arm: armbian-rockchip64-edge
-          symlink_x86: armbian-uefi-x86-edge
+          - name: lts
+            base: lts
+            symlink_arm: aarch64
+            symlink_x86: x86_64
+          - name: armbian-uefi
+            base: armbian-uefi
+            symlink_arm: armbian-uefi-arm64-edge
+            symlink_x86: armbian-uefi-x86-edge
+          - name: armbian-bcm2711
+            base: armbian-bcm2711
+            symlink_arm: armbian-bcm2711-current
+            symlink_x86: armbian-uefi-x86-edge
+          - name: armbian-meson64
+            base: armbian-meson64
+            symlink_arm: armbian-meson64-edge
+            symlink_x86: armbian-uefi-x86-edge
+          - name: armbian-rk35xx
+            base: armbian-rk35xx
+            symlink_arm: armbian-rk35xx-vendor
+            symlink_x86: armbian-uefi-x86-edge
+          - name: armbian-rockchip64
+            base: armbian-rockchip64
+            symlink_arm: armbian-rockchip64-edge
+            symlink_x86: armbian-uefi-x86-edge
       fail-fast: false
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up ORAS
-      uses: oras-project/setup-oras@v1
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Download all archives
-      run: |
-        mkdir -p work/all-${{ matrix.variant.name }}
-        cd work/all-${{ matrix.variant.name }}
+      - name: Download all archives
+        run: |
+          mkdir -p work/all-${{ matrix.variant.name }}
+          cd work/all-${{ matrix.variant.name }}
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          BASE_URL="https://github.com/tinkerbell/hook/releases/download/${VERSION}"
 
-        echo "Downloading all Hook archives..."
+          echo "Downloading all Hook archives..."
 
-        # Download LTS
-        curl -fsSL -o hook_latest-lts-aarch64.tar.gz "${BASE_URL}/hook_latest-lts-aarch64.tar.gz" || true
-        curl -fsSL -o hook_latest-lts-x86_64.tar.gz "${BASE_URL}/hook_latest-lts-x86_64.tar.gz" || true
+          # Download LTS
+          curl -fsSL -o hook_latest-lts-aarch64.tar.gz "${BASE_URL}/hook_latest-lts-aarch64.tar.gz" || true
+          curl -fsSL -o hook_latest-lts-x86_64.tar.gz "${BASE_URL}/hook_latest-lts-x86_64.tar.gz" || true
 
-        # Download Armbian UEFI
-        curl -fsSL -o hook_armbian-uefi-arm64-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-arm64-edge.tar.gz" || true
-        curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || true
+          # Download Armbian UEFI
+          curl -fsSL -o hook_armbian-uefi-arm64-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-arm64-edge.tar.gz" || true
+          curl -fsSL -o hook_armbian-uefi-x86-edge.tar.gz "${BASE_URL}/hook_armbian-uefi-x86-edge.tar.gz" || true
 
-        # Download Armbian boards
-        curl -fsSL -o hook_armbian-bcm2711-current.tar.gz "${BASE_URL}/hook_armbian-bcm2711-current.tar.gz" || true
-        curl -fsSL -o hook_armbian-meson64-edge.tar.gz "${BASE_URL}/hook_armbian-meson64-edge.tar.gz" || true
-        curl -fsSL -o hook_armbian-rk35xx-vendor.tar.gz "${BASE_URL}/hook_armbian-rk35xx-vendor.tar.gz" || true
-        curl -fsSL -o hook_armbian-rockchip64-edge.tar.gz "${BASE_URL}/hook_armbian-rockchip64-edge.tar.gz" || true
+          # Download Armbian boards
+          curl -fsSL -o hook_armbian-bcm2711-current.tar.gz "${BASE_URL}/hook_armbian-bcm2711-current.tar.gz" || true
+          curl -fsSL -o hook_armbian-meson64-edge.tar.gz "${BASE_URL}/hook_armbian-meson64-edge.tar.gz" || true
+          curl -fsSL -o hook_armbian-rk35xx-vendor.tar.gz "${BASE_URL}/hook_armbian-rk35xx-vendor.tar.gz" || true
+          curl -fsSL -o hook_armbian-rockchip64-edge.tar.gz "${BASE_URL}/hook_armbian-rockchip64-edge.tar.gz" || true
 
-        ls -lh
+          ls -lh
 
-    - name: Extract all archives
-      run: |
-        cd work/all-${{ matrix.variant.name }}
+      - name: Extract all archives
+        run: |
+          cd work/all-${{ matrix.variant.name }}
 
-        # Extract all archives
-        for archive in *.tar.gz; do
-          if [ -f "$archive" ]; then
-            echo "Extracting $archive..."
-            tar -xzf "$archive"
+          # Extract all archives
+          for archive in *.tar.gz; do
+            if [ -f "$archive" ]; then
+              echo "Extracting $archive..."
+              tar -xzf "$archive"
+            fi
+          done
+
+          # Extract DTB archive for bcm2711 if this is a bcm2711 variant
+          VARIANT_NAME="${{ matrix.variant.name }}"
+          if [[ "$VARIANT_NAME" == *"bcm2711"* ]] && [ -f "dtbs-armbian-bcm2711-current.tar.gz" ]; then
+            echo "Extracting bcm2711 DTB archive..."
+            mkdir -p dtb
+            tar xvf dtbs-armbian-bcm2711-current.tar.gz --strip-components=1 -C dtb
           fi
-        done
 
-        # Remove tar.gz files
-        rm -f *.tar.gz
+          # Remove tar.gz files
+          rm -f *.tar.gz
 
-        echo "All extracted files:"
-        ls -lh
+          echo "All extracted files:"
+          ls -lh
 
-    - name: Create variant-specific symlinks
-      run: |
-        cd work/all-${{ matrix.variant.name }}
+      - name: Create variant-specific symlinks
+        run: |
+          cd work/all-${{ matrix.variant.name }}
 
-        ARM_SOURCE="${{ matrix.variant.symlink_arm }}"
-        X86_SOURCE="${{ matrix.variant.symlink_x86 }}"
+          ARM_SOURCE="${{ matrix.variant.symlink_arm }}"
+          X86_SOURCE="${{ matrix.variant.symlink_x86 }}"
 
-        echo "Creating symlinks for ${{ matrix.variant.name }}-all variant"
-        echo "ARM source: ${ARM_SOURCE}"
-        echo "x86 source: ${X86_SOURCE}"
+          echo "Creating symlinks for ${{ matrix.variant.name }}-all variant"
+          echo "ARM source: ${ARM_SOURCE}"
+          echo "x86 source: ${X86_SOURCE}"
 
-        # Create ARM symlinks
-        if [ -f "vmlinuz-${ARM_SOURCE}" ]; then
-          ln -sf "vmlinuz-${ARM_SOURCE}" vmlinuz-arm64
-          ln -sf "vmlinuz-${ARM_SOURCE}" vmlinuz-aarch64
-        fi
-        if [ -f "initramfs-${ARM_SOURCE}" ]; then
-          ln -sf "initramfs-${ARM_SOURCE}" initramfs-arm64
-          ln -sf "initramfs-${ARM_SOURCE}" initramfs-aarch64
-        fi
+          # Create ARM symlinks
+          if [ -f "vmlinuz-${ARM_SOURCE}" ]; then
+            ln -sf "vmlinuz-${ARM_SOURCE}" vmlinuz-arm64
+            ln -sf "vmlinuz-${ARM_SOURCE}" vmlinuz-aarch64
+          fi
+          if [ -f "initramfs-${ARM_SOURCE}" ]; then
+            ln -sf "initramfs-${ARM_SOURCE}" initramfs-arm64
+            ln -sf "initramfs-${ARM_SOURCE}" initramfs-aarch64
+          fi
 
-        # Create x86 symlinks
-        if [ -f "vmlinuz-${X86_SOURCE}" ]; then
-          ln -sf "vmlinuz-${X86_SOURCE}" vmlinuz-x86_64
-        fi
-        if [ -f "initramfs-${X86_SOURCE}" ]; then
-          ln -sf "initramfs-${X86_SOURCE}" initramfs-x86_64
-        fi
+          # Create x86 symlinks
+          if [ -f "vmlinuz-${X86_SOURCE}" ]; then
+            ln -sf "vmlinuz-${X86_SOURCE}" vmlinuz-x86_64
+          fi
+          if [ -f "initramfs-${X86_SOURCE}" ]; then
+            ln -sf "initramfs-${X86_SOURCE}" initramfs-x86_64
+          fi
 
-        echo "Final bundle with symlinks:"
-        ls -lh
+          echo "Final bundle with symlinks:"
+          ls -lh
 
-    - name: Push all variant image
-      run: |
-        cd work/all-${{ matrix.variant.name }}
+      - name: Push all variant image
+        run: |
+          cd work/all-${{ matrix.variant.name }}
 
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        VARIANT="${{ matrix.variant.name }}"
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          VARIANT="${{ matrix.variant.name }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        echo "Pushing ${IMAGE_BASE}:${VERSION}-${VARIANT}-all"
-        oras push "${IMAGE_BASE}:${VERSION}-${VARIANT}-all" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${VERSION}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook ${VARIANT} OS image (all variants)" \
-          --annotation "org.tinkerbell.hook.variant=${VARIANT}-all" \
-          $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          echo "Pushing ${IMAGE_BASE}:${VERSION}-${VARIANT}-all"
+          oras push "${IMAGE_BASE}:${VERSION}-${VARIANT}-all" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook ${VARIANT} OS image (all variants)" \
+            --annotation "org.tinkerbell.hook.variant=${VARIANT}-all" \
+            $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop|dtb/)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
-    - name: Tag as latest-all
-      if: needs.prepare.outputs.publish_latest == 'true' && matrix.variant.name == 'lts'
-      run: |
-        cd work/all-${{ matrix.variant.name }}
+      - name: Tag as latest-all
+        if: needs.prepare.outputs.publish_latest == 'true' && matrix.variant.name == 'lts'
+        run: |
+          cd work/all-${{ matrix.variant.name }}
 
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        echo "Pushing ${IMAGE_BASE}:latest-all"
-        oras push "${IMAGE_BASE}:latest-all" \
-          --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
-          --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
-          --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
-          --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (latest, all variants)" \
-          --annotation "org.tinkerbell.hook.variant=lts-all" \
-          $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
+          echo "Pushing ${IMAGE_BASE}:latest-all"
+          oras push "${IMAGE_BASE}:latest-all" \
+            --artifact-type application/vnd.tinkerbell.hook.os.v1+tar \
+            --annotation "org.opencontainers.image.source=https://github.com/tinkerbell/hook" \
+            --annotation "org.opencontainers.image.version=${{ needs.prepare.outputs.version_tag }}" \
+            --annotation "org.opencontainers.image.description=Tinkerbell Hook OS image (latest, all variants)" \
+            --annotation "org.tinkerbell.hook.variant=lts-all" \
+            $(find . -type f -o -type l | grep -E '(vmlinuz|initramfs|modloop|dtb/)' | sed 's/^\.\///' | xargs -I {} echo "{}:application/octet-stream")
 
   summary:
-    needs: [prepare, build-lts, build-armbian-uefi, build-armbian-boards, build-all-variants]
+    needs:
+      [
+        prepare,
+        build-lts,
+        build-armbian-uefi,
+        build-armbian-boards,
+        build-all-variants,
+      ]
     runs-on: ubuntu-latest
     if: always()
     steps:
-    - name: Generate summary
-      run: |
-        VERSION="${{ needs.prepare.outputs.version_tag }}"
-        IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
+      - name: Generate summary
+        run: |
+          VERSION="${{ needs.prepare.outputs.version_tag }}"
+          IMAGE_BASE="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
 
-        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-        # Hook OS Images Published
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # Hook OS Images Published
 
-        ## Version: ${{ needs.prepare.outputs.version_tag }}
+          ## Version: ${{ needs.prepare.outputs.version_tag }}
 
-        ### Published Images
+          ### Published Images
 
-        #### Base Variants
-        - `${IMAGE_BASE}:${VERSION}` (default, LTS)
-        - `${IMAGE_BASE}:${VERSION}-lts`
+          #### Base Variants
+          - `${IMAGE_BASE}:${VERSION}` (default, LTS)
+          - `${IMAGE_BASE}:${VERSION}-lts`
 
-        #### Armbian UEFI
-        - `${IMAGE_BASE}:${VERSION}-armbian-uefi`
+          #### Armbian UEFI
+          - `${IMAGE_BASE}:${VERSION}-armbian-uefi`
 
-        #### Armbian Boards
-        - `${IMAGE_BASE}:${VERSION}-armbian-bcm2711`
-        - `${IMAGE_BASE}:${VERSION}-armbian-meson64`
-        - `${IMAGE_BASE}:${VERSION}-armbian-rk35xx`
-        - `${IMAGE_BASE}:${VERSION}-armbian-rockchip64`
+          #### Armbian Boards
+          - `${IMAGE_BASE}:${VERSION}-armbian-bcm2711`
+          - `${IMAGE_BASE}:${VERSION}-armbian-meson64`
+          - `${IMAGE_BASE}:${VERSION}-armbian-rk35xx`
+          - `${IMAGE_BASE}:${VERSION}-armbian-rockchip64`
 
-        #### All-in-One Variants
-        - `${IMAGE_BASE}:${VERSION}-lts-all`
-        - `${IMAGE_BASE}:${VERSION}-armbian-uefi-all`
-        - `${IMAGE_BASE}:${VERSION}-armbian-bcm2711-all`
-        - `${IMAGE_BASE}:${VERSION}-armbian-meson64-all`
-        - `${IMAGE_BASE}:${VERSION}-armbian-rk35xx-all`
-        - `${IMAGE_BASE}:${VERSION}-armbian-rockchip64-all`
+          #### All-in-One Variants
+          - `${IMAGE_BASE}:${VERSION}-lts-all`
+          - `${IMAGE_BASE}:${VERSION}-armbian-uefi-all`
+          - `${IMAGE_BASE}:${VERSION}-armbian-bcm2711-all`
+          - `${IMAGE_BASE}:${VERSION}-armbian-meson64-all`
+          - `${IMAGE_BASE}:${VERSION}-armbian-rk35xx-all`
+          - `${IMAGE_BASE}:${VERSION}-armbian-rockchip64-all`
 
-        ### Pull Example
+          ### Pull Example
 
-        ```bash
-        oras pull ${IMAGE_BASE}:${VERSION}-lts
-        ```
+          ```bash
+          oras pull ${IMAGE_BASE}:${VERSION}-lts
+          ```
 
-        ### Standard Architecture Files
+          ### Standard Architecture Files
 
-        Each image includes symlinks for standard architecture names:
-        - `vmlinuz-arm64` / `vmlinuz-aarch64`
-        - `initramfs-arm64` / `initramfs-aarch64`
-        - `vmlinuz-x86_64`
-        - `initramfs-x86_64`
+          Each image includes symlinks for standard architecture names:
+          - `vmlinuz-arm64` / `vmlinuz-aarch64`
+          - `initramfs-arm64` / `initramfs-aarch64`
+          - `vmlinuz-x86_64`
+          - `initramfs-x86_64`
 
-        Plus variant-specific kernel and initramfs files.
-        EOF
+          Plus variant-specific kernel and initramfs files.
+          EOF
