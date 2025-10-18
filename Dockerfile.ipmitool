@@ -16,7 +16,8 @@ RUN apk add --no-cache \
     readline-dev \
     readline-static \
     ncurses-static \
-    zlib-static
+    zlib-static \
+    file
 
 # Clone ipmitool source
 WORKDIR /build
