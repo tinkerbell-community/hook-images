@@ -573,8 +573,8 @@ jobs:
           ### Standard Architecture Files
 
           Each image includes symlinks for standard architecture names:
-          - `vmlinuz-arm64` / `vmlinuz-aarch64`
-          - `initramfs-arm64` / `initramfs-aarch64`
+          - `vmlinuz-aarch64`
+          - `initramfs-aarch64`
           - `vmlinuz-x86_64`
           - `initramfs-x86_64`
 

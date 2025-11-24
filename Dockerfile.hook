@@ -1,0 +1,25 @@
+FROM alpine:3.22 AS downloader
+
+# Install wget and tar
+RUN apk add --no-cache wget tar
+
+WORKDIR /images
+
+# Download and extract all hook images
+RUN wget -O- https://github.com/tinkerbell/hook/releases/download/v0.11.1/hook_latest-lts-x86_64.tar.gz | tar -xzC /images && \
+    wget -O- https://github.com/tinkerbell/hook/releases/download/v0.11.1/hook_armbian-bcm2711-current.tar.gz | tar -xzC /images && \
+    tar -C /images/dtb -xzvf /images/dtbs-armbian-bcm2711-current.tar.gz && \
+    mv initramfs-latest-lts-x86_64 initramfs-x86_64 && \
+    mv vmlinuz-latest-lts-x86_64 vmlinuz-x86_64 && \
+    mv vmlinuz-armbian-bcm2711-current vmlinuz-aarch64 && \
+    mv initramfs-armbian-bcm2711-current initramfs-aarch64
+
+# Metadata
+LABEL org.opencontainers.image.source="https://github.com/tinkerbell/hook"
+LABEL org.opencontainers.image.description="Tinkerbell Hook OS image files"
+
+FROM scratch
+
+COPY --from=downloader /images/initramfs-* /
+COPY --from=downloader /images/vmlinuz-* /
+COPY --from=downloader /images/dtb/* /dtb/

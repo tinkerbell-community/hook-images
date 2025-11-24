@@ -56,7 +56,7 @@ EOF
 download_lts() {
     local base_url="$1"
     local work_dir="$2"
-    
+
     echo "Downloading LTS archives..."
     curl -fsSL -o "${work_dir}/hook_latest-lts-aarch64.tar.gz" \
         "${base_url}/hook_latest-lts-aarch64.tar.gz" || true
@@ -67,7 +67,7 @@ download_lts() {
 download_armbian_uefi() {
     local base_url="$1"
     local work_dir="$2"
-    
+
     echo "Downloading Armbian UEFI archives..."
     curl -fsSL -o "${work_dir}/hook_armbian-uefi-arm64-edge.tar.gz" \
         "${base_url}/hook_armbian-uefi-arm64-edge.tar.gz" || true
@@ -80,7 +80,7 @@ download_armbian_board() {
     local work_dir="$2"
     local board="$3"
     local suffix="$4"
-    
+
     echo "Downloading Armbian ${board} archives..."
     curl -fsSL -o "${work_dir}/hook_armbian-${board}-${suffix}.tar.gz" \
         "${base_url}/hook_armbian-${board}-${suffix}.tar.gz" || true
@@ -91,39 +91,39 @@ download_armbian_board() {
 
 extract_archives() {
     local work_dir="$1"
-    
+
     echo "Extracting archives..."
     cd "${work_dir}"
-    
+
     for archive in *.tar.gz; do
         if [[ -f "${archive}" ]]; then
             echo "  Extracting ${archive}..."
             tar -xzf "${archive}"
         fi
     done
-    
+
     # Clean up tar.gz files
     rm -f *.tar.gz
-    
+
     echo "Extracted files:"
     ls -lh
 }
 
 create_lts_symlinks() {
     local work_dir="$1"
-    
+
     cd "${work_dir}"
-    
+
     echo "LTS variant uses native architecture names, no symlinks needed"
 }
 
 create_armbian_uefi_symlinks() {
     local work_dir="$1"
-    
+
     cd "${work_dir}"
-    
+
     echo "Creating Armbian UEFI symlinks..."
-    
+
     if [[ -f "vmlinuz-armbian-uefi-arm64-edge" ]]; then
         ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-arm64
         ln -sf vmlinuz-armbian-uefi-arm64-edge vmlinuz-aarch64
@@ -144,11 +144,11 @@ create_board_symlinks() {
     local work_dir="$1"
     local board="$2"
     local suffix="$3"
-    
+
     cd "${work_dir}"
-    
+
     echo "Creating Armbian ${board} symlinks..."
-    
+
     # ARM board -> standard ARM names
     if [[ -f "vmlinuz-armbian-${board}-${suffix}" ]]; then
         ln -sf "vmlinuz-armbian-${board}-${suffix}" vmlinuz-arm64
@@ -158,7 +158,7 @@ create_board_symlinks() {
         ln -sf "initramfs-armbian-${board}-${suffix}" initramfs-arm64
         ln -sf "initramfs-armbian-${board}-${suffix}" initramfs-aarch64
     fi
-    
+
     # x86 UEFI -> standard x86_64 name
     if [[ -f "vmlinuz-armbian-uefi-x86-edge" ]]; then
         ln -sf vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64
@@ -171,11 +171,11 @@ create_board_symlinks() {
 create_all_variant_symlinks() {
     local work_dir="$1"
     local variant="$2"
-    
+
     cd "${work_dir}"
-    
+
     echo "Creating symlinks for ${variant}-all variant..."
-    
+
     case "${variant}" in
         lts)
             ARM_SOURCE="aarch64"
@@ -206,10 +206,10 @@ create_all_variant_symlinks() {
             return 1
             ;;
     esac
-    
+
     echo "  ARM source: ${ARM_SOURCE}"
     echo "  x86 source: ${X86_SOURCE}"
-    
+
     # ARM symlinks
     if [[ -f "vmlinuz-${ARM_SOURCE}" ]]; then
         ln -sf "vmlinuz-${ARM_SOURCE}" vmlinuz-arm64
@@ -219,7 +219,7 @@ create_all_variant_symlinks() {
         ln -sf "initramfs-${ARM_SOURCE}" initramfs-arm64
         ln -sf "initramfs-${ARM_SOURCE}" initramfs-aarch64
     fi
-    
+
     # x86 symlinks
     if [[ -f "vmlinuz-${X86_SOURCE}" ]]; then
         ln -sf "vmlinuz-${X86_SOURCE}" vmlinuz-x86_64
@@ -251,41 +251,41 @@ case "${VARIANT}" in
         extract_archives "${WORK_DIR}"
         create_lts_symlinks "${WORK_DIR}"
         ;;
-    
+
     armbian-uefi)
         download_armbian_uefi "${BASE_URL}" "${WORK_DIR}"
         extract_archives "${WORK_DIR}"
         create_armbian_uefi_symlinks "${WORK_DIR}"
         ;;
-    
+
     armbian-bcm2711)
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "bcm2711" "current"
         extract_archives "${WORK_DIR}"
         create_board_symlinks "${WORK_DIR}" "bcm2711" "current"
         ;;
-    
+
     armbian-meson64)
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "meson64" "edge"
         extract_archives "${WORK_DIR}"
         create_board_symlinks "${WORK_DIR}" "meson64" "edge"
         ;;
-    
+
     armbian-rk35xx)
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "rk35xx" "vendor"
         extract_archives "${WORK_DIR}"
         create_board_symlinks "${WORK_DIR}" "rk35xx" "vendor"
         ;;
-    
+
     armbian-rockchip64)
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "rockchip64" "edge"
         extract_archives "${WORK_DIR}"
         create_board_symlinks "${WORK_DIR}" "rockchip64" "edge"
         ;;
-    
+
     *-all)
         BASE_VARIANT="${VARIANT%-all}"
         echo "Building ${BASE_VARIANT}-all variant (includes all archives)..."
-        
+
         # Download all archives
         download_lts "${BASE_URL}" "${WORK_DIR}"
         download_armbian_uefi "${BASE_URL}" "${WORK_DIR}"
@@ -293,11 +293,11 @@ case "${VARIANT}" in
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "meson64" "edge"
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "rk35xx" "vendor"
         download_armbian_board "${BASE_URL}" "${WORK_DIR}" "rockchip64" "edge"
-        
+
         extract_archives "${WORK_DIR}"
         create_all_variant_symlinks "${WORK_DIR}" "${BASE_VARIANT}"
         ;;
-    
+
     *)
         echo "ERROR: Unknown variant: ${VARIANT}"
         usage
