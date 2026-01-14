@@ -8,6 +8,7 @@ WORKDIR /images
 # Download and extract all hook images
 RUN wget -O- https://github.com/tinkerbell/hook/releases/download/v0.11.1/hook_latest-lts-x86_64.tar.gz | tar -xzC /images && \
     wget -O- https://github.com/tinkerbell/hook/releases/download/v0.11.1/hook_armbian-bcm2711-current.tar.gz | tar -xzC /images && \
+    mkdir -p /images/dtb && \
     tar -C /images/dtb -xzvf /images/dtbs-armbian-bcm2711-current.tar.gz && \
     mv initramfs-latest-lts-x86_64 initramfs-x86_64 && \
     mv vmlinuz-latest-lts-x86_64 vmlinuz-x86_64 && \
@@ -20,6 +21,8 @@ LABEL org.opencontainers.image.description="Tinkerbell Hook OS image files"
 
 FROM scratch
 
-COPY --from=downloader /images/initramfs-* /
-COPY --from=downloader /images/vmlinuz-* /
+COPY --from=downloader /images/initramfs-x86_64 /
+COPY --from=downloader /images/vmlinuz-x86_64 /
+COPY --from=downloader /images/initramfs-aarch64 /
+COPY --from=downloader /images/vmlinuz-aarch64 /
 COPY --from=downloader /images/dtb/* /dtb/
