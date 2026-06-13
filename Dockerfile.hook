@@ -6,10 +6,9 @@ RUN apk add --no-cache wget tar
 WORKDIR /images
 
 # Download and extract all hook images
-RUN wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_latest-lts-x86_64.tar.gz | tar -xzC /images && \
-    wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_armbian-bcm2711-current.tar.gz | tar -xzC /images && \
-    wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_armbian-uefi-arm64-edge.tar.gz | tar -xzC /images && \
+RUN wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_armbian-bcm2711-current.tar.gz | tar -xzC /images && \
     wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_armbian-uefi-x86-edge.tar.gz | tar -xzC /images && \
+    wget -O- https://github.com/tinkerbell-community/hook/releases/download/latest/hook_armbian-uefi-arm64-edge.tar.gz | tar -xzC /images && \
     tar -xzvf dtbs-armbian-bcm2711-current.tar.gz && \
     mv dtbs-armbian-bcm2711-current/broadcom/* ./ && \
     mv dtbs-armbian-bcm2711-current/overlays ./ && \
@@ -17,6 +16,8 @@ RUN wget -O- https://github.com/tinkerbell-community/hook/releases/download/late
     rm dtbs-armbian-bcm2711-current.tar.gz && \
     mv initramfs-armbian-uefi-x86-edge initramfs-x86_64 && \
     mv vmlinuz-armbian-uefi-x86-edge vmlinuz-x86_64 && \
+    # mv initramfs-armbian-bcm2711-current initramfs-aarch64 && \
+    # mv vmlinuz-armbian-bcm2711-current vmlinuz-aarch64 && \
     mv initramfs-armbian-uefi-arm64-edge initramfs-aarch64 && \
     mv vmlinuz-armbian-uefi-arm64-edge vmlinuz-aarch64
 
@@ -26,8 +27,6 @@ LABEL org.opencontainers.image.description="Tinkerbell Hook OS image files"
 
 FROM scratch
 
-COPY --from=downloader /images/initramfs-armbian-bcm2711-current /
-COPY --from=downloader /images/vmlinuz-armbian-bcm2711-current /
 COPY --from=downloader /images/initramfs-x86_64 /
 COPY --from=downloader /images/vmlinuz-x86_64 /
 COPY --from=downloader /images/initramfs-aarch64 /
